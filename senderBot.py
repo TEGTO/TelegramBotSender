@@ -3,7 +3,7 @@ from telebot import types
 from messageInfo import messageInfo
 from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime, timedelta, time
-
+import time as t
 scheduler = BackgroundScheduler()
 scheduler.start()
 
@@ -65,16 +65,16 @@ def _set_message(message):
 
 def _process_given_info_send_message(message):
     try:
-        info = message.text.split({SPLIT_SYMBOL})
+        info = message.text.split(SPLIT_SYMBOL)
         message_info = messageInfo(info[0].strip(), int(info[1].strip()), "None", "None")
         _send_message_content(message_info)
     except Exception as e:
-        _send_text_message(bot, message.chat.id, f"An error occurred")
-        print(f"An error occurred: {str(e)}")
+        _send_text_message(bot, message.chat.id, "An error occurred")
+        print(f"An error occurred in _process_given_info_send_message: {str(e)}")
 
 def _process_given_info_send_message_delayed(message):
     try:
-        info = message.text.split({SPLIT_SYMBOL})
+        info = message.text.split(SPLIT_SYMBOL)
         message_info = messageInfo(info[0].strip(), int(info[1].strip()), info[2].strip(), int(info[3].strip()))
         send_time = message_info.send_time.split(":")
         if len(send_time) == 1:
@@ -88,8 +88,8 @@ def _process_given_info_send_message_delayed(message):
         scheduler.add_job(_send_message_content, 'interval', hours=24, start_date=combined_datetime,
                           args=[message_info], end_date=end_date)
     except Exception as e:
-       _send_text_message(bot, message.chat.id, f"An error occurred")
-       print(f"An error occurred: {str(e)}")
+       _send_text_message(bot, message.chat.id, "An error occurred")
+       print(f"An error occurred in _process_given_info_send_message_delayed: {str(e)}")
 
 def _process_given_message(message):
     try:
@@ -97,18 +97,24 @@ def _process_given_message(message):
         message_content = message
         _send_text_message(bot, message.chat.id, "Message content is set")
     except Exception as e:
-        _send_text_message(bot, message.chat.id, f"An error occurred")
-        print(f"An error occurred: {str(e)}")
+        _send_text_message(bot, message.chat.id, "An error occurred")
+        print(f"An error occurred in _process_given_message: {str(e)}")
 
-def _send_message_content(kill_spam_message_info):
-        chatId = int(kill_spam_message_info.chatId)
-        for x in range(0, kill_spam_message_info.amountOfMessages):
-            if message_content.text:
-                _send_text_message(bot, chatId, message_content.text)
-            elif message_content.photo:
-             bot.send_photo(chatId, message_content.photo[-1].file_id)
-            elif message_content.video:
-                bot.send_video(chatId, message_content.video.file_id)
+def _send_message_content(message_info):
+        chatId = int(message_info.chat_id)
+        it = 0
+        while (it != message_info.amount_of_messages):
+            try:
+                if message_content.text:
+                    _send_text_message(bot, chatId, message_content.text)
+                elif message_content.photo:
+                    bot.send_photo(chatId, message_content.photo[-1].file_id)
+                elif message_content.video:
+                    bot.send_video(chatId, message_content.video.file_id)
+                it += 1
+            except Exception as e:
+                t.sleep(10)
+                print(f"An error occurred in _send_message_content: {str(e)}")
          
 def _send_text_message(bot, chat_id, text):
     bot.send_message(chat_id, text)
