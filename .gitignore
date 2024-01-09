@@ -1,0 +1,7 @@
+
+.vscode/settings.json
+__pycache__/botSender.cpython-311.pyc
+__pycache__/killSpamMessageInfo.cpython-311.pyc
+__pycache__/senderBot.cpython-311.pyc
+__pycache__/receiverBot.cpython-311.pyc
+__pycache__/util.cpython-311.pyc

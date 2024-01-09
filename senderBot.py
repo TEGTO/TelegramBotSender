@@ -10,7 +10,7 @@ scheduler.start()
 SEND_MESSAGE = "Send Message"
 SEND_DELAYED_MESSAGE = "Send Delayed Message"
 SET_MESSAGE_CONTENT = "Set Message Content"
-SPLIT_SYMBOL = "$"
+SPLIT_SYMBOL = "||"
 controller_id = 0 # if you want the bot to be controlled only by a specific id
 
 botTocken = ""
@@ -40,19 +40,19 @@ def _handle_all_messages(message):
             bot.send_photo(message.chat.id, photo)
     
 def _send_message(message):
-    send_text_message(bot, message.chat.id, "So, shall we start...")
-    send_text_message(bot, message.chat.id, "Use this format to send your message:")
-    send_text_message(bot, message.chat.id, f"Chat Id{SPLIT_SYMBOL}Amount of messages")
+    _send_text_message(bot, message.chat.id, "So, shall we start...")
+    _send_text_message(bot, message.chat.id, "Use this format to send your message:")
+    _send_text_message(bot, message.chat.id, f"Chat Id{SPLIT_SYMBOL}Amount of messages")
     bot.register_next_step_handler(message, _process_given_info_send_message)
 
 def _send_delayed_message(message):
-    send_text_message(bot, message.chat.id, "So, shall we start...")
-    send_text_message(bot, message.chat.id, "Use this format to send your message, the delayed message will send at the same time every day:")
-    send_text_message(bot, message.chat.id, f"Chat Id{SPLIT_SYMBOL}Amount of messages{SPLIT_SYMBOL}11:20{SPLIT_SYMBOL}Amount of days")
+    _send_text_message(bot, message.chat.id, "So, shall we start...")
+    _send_text_message(bot, message.chat.id, "Use this format to send your message, the delayed message will send at the same time every day:")
+    _send_text_message(bot, message.chat.id, f"Chat Id{SPLIT_SYMBOL}Amount of messages{SPLIT_SYMBOL}11:20{SPLIT_SYMBOL}Amount of days")
     bot.register_next_step_handler(message, _process_given_info_send_message_delayed)
 
 def _set_message(message):
-    send_text_message(bot, message.chat.id, "Send in next message to me, what you want to put in your message.")
+    _send_text_message(bot, message.chat.id, "Send in next message to me, what you want to put in your message.")
     bot.register_next_step_handler(message, _process_given_message)
 
 def _interaction_buttons(message):
@@ -69,7 +69,8 @@ def _process_given_info_send_message(message):
         message_info = messageInfo(info[0].strip(), int(info[1].strip()), "None", "None")
         _send_message_content(message_info)
     except Exception as e:
-        send_text_message(bot, message.chat.id, f"An error occurred: {str(e)}")
+        _send_text_message(bot, message.chat.id, f"An error occurred")
+        print(f"An error occurred: {str(e)}")
 
 def _process_given_info_send_message_delayed(message):
     try:
@@ -81,30 +82,33 @@ def _process_given_info_send_message_delayed(message):
         given_time = time(int(send_time[0]), int(send_time[1]))
         current_date = datetime.now().date()
         combined_datetime = datetime.combine(current_date, given_time)
-        send_text_message(bot, message.chat.id, "Message is set")
-        end_date = combined_datetime + timedelta(days=message_info.amountOfDays - 1)
+        _send_text_message(bot, message.chat.id, "Message is set")
+        amount_of_sending_days = message_info.amountOfDays - 1 if message_info.amountOfDays > 0 else 0
+        end_date = combined_datetime + timedelta(days=amount_of_sending_days)
         scheduler.add_job(_send_message_content, 'interval', hours=24, start_date=combined_datetime,
                           args=[message_info], end_date=end_date)
     except Exception as e:
-       send_text_message(bot, message.chat.id, f"An error occurred: {str(e)}")
+       _send_text_message(bot, message.chat.id, f"An error occurred")
+       print(f"An error occurred: {str(e)}")
 
 def _process_given_message(message):
     try:
         global messageContent
         messageContent = message
-        send_text_message(bot, message.chat.id, "Message content is set")
+        _send_text_message(bot, message.chat.id, "Message content is set")
     except Exception as e:
-        send_text_message(bot, message.chat.id, f"An error occurred: {str(e)}")
+        _send_text_message(bot, message.chat.id, f"An error occurred")
+        print(f"An error occurred: {str(e)}")
 
 def _send_message_content(kill_spam_message_info):
         chatId = int(kill_spam_message_info.chatId)
         for x in range(0, kill_spam_message_info.amountOfMessages):
             if messageContent.text:
-                send_text_message(bot, chatId, messageContent.text)
+                _send_text_message(bot, chatId, messageContent.text)
             elif messageContent.photo:
              bot.send_photo(chatId, messageContent.photo[-1].file_id)
             elif messageContent.video:
                 bot.send_video(chatId, messageContent.video.file_id)
          
-def send_text_message(bot, chat_id, text):
+def _send_text_message(bot, chat_id, text):
     bot.send_message(chat_id, text)
