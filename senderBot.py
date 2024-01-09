@@ -11,11 +11,11 @@ SEND_MESSAGE = "Send Message"
 SEND_DELAYED_MESSAGE = "Send Delayed Message"
 SET_MESSAGE_CONTENT = "Set Message Content"
 SPLIT_SYMBOL = "||"
-controller_id = 0 # if you want the bot to be controlled only by a specific id
+controller_id = 0
 
-botTocken = ""
-bot = telebot.TeleBot(botTocken)
-messageContent = ""
+bot_tocken = ""
+bot = telebot.TeleBot(bot_tocken)
+message_content = ""
 
 def initialize_sender_bot():
     global allowed_group_id
@@ -25,9 +25,17 @@ def initialize_sender_bot():
 def _start(message):
     _interaction_buttons(message)
 
+def _interaction_buttons(message):
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=3)
+    setMessage = types.KeyboardButton(SET_MESSAGE_CONTENT)
+    sendMessage = types.KeyboardButton(SEND_MESSAGE)
+    sendDelayedMessage = types.KeyboardButton(SEND_DELAYED_MESSAGE)
+    markup.add(setMessage,sendMessage, sendDelayedMessage)
+    bot.reply_to(message, text="Hello! I'm Joe Biden and today we will give a lesson to some naughty kids.", reply_markup = markup)
+
 @bot.message_handler(func=lambda message: True)
 def _handle_all_messages(message):
-    #if(message.chat.id == controller_id):
+    #if(message.chat.id == controller_id): # if you want the bot to be controlled only by a specific id, uncomment
     if(message.chat.type == "private"):
         if message.text == SEND_MESSAGE:
             _send_message(message)
@@ -55,14 +63,6 @@ def _set_message(message):
     _send_text_message(bot, message.chat.id, "Send in next message to me, what you want to put in your message.")
     bot.register_next_step_handler(message, _process_given_message)
 
-def _interaction_buttons(message):
-    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=3)
-    setMessage = types.KeyboardButton(SET_MESSAGE_CONTENT)
-    sendMessage = types.KeyboardButton(SEND_MESSAGE)
-    sendDelayedMessage = types.KeyboardButton(SEND_DELAYED_MESSAGE)
-    markup.add(setMessage,sendMessage, sendDelayedMessage)
-    bot.reply_to(message, text="Hello! I'm Joe Biden and today we will give a lesson to some naughty kids.", reply_markup = markup)
-
 def _process_given_info_send_message(message):
     try:
         info = message.text.split({SPLIT_SYMBOL})
@@ -76,14 +76,14 @@ def _process_given_info_send_message_delayed(message):
     try:
         info = message.text.split({SPLIT_SYMBOL})
         message_info = messageInfo(info[0].strip(), int(info[1].strip()), info[2].strip(), int(info[3].strip()))
-        send_time = message_info.sendTime.split(":")
+        send_time = message_info.send_time.split(":")
         if len(send_time) == 1:
             send_time.append("00")
         given_time = time(int(send_time[0]), int(send_time[1]))
         current_date = datetime.now().date()
         combined_datetime = datetime.combine(current_date, given_time)
         _send_text_message(bot, message.chat.id, "Message is set")
-        amount_of_sending_days = message_info.amountOfDays - 1 if message_info.amountOfDays > 0 else 0
+        amount_of_sending_days = message_info.amount_of_days - 1 if message_info.amount_of_days > 0 else 0
         end_date = combined_datetime + timedelta(days=amount_of_sending_days)
         scheduler.add_job(_send_message_content, 'interval', hours=24, start_date=combined_datetime,
                           args=[message_info], end_date=end_date)
@@ -93,8 +93,8 @@ def _process_given_info_send_message_delayed(message):
 
 def _process_given_message(message):
     try:
-        global messageContent
-        messageContent = message
+        global message_content
+        message_content = message
         _send_text_message(bot, message.chat.id, "Message content is set")
     except Exception as e:
         _send_text_message(bot, message.chat.id, f"An error occurred")
@@ -103,12 +103,12 @@ def _process_given_message(message):
 def _send_message_content(kill_spam_message_info):
         chatId = int(kill_spam_message_info.chatId)
         for x in range(0, kill_spam_message_info.amountOfMessages):
-            if messageContent.text:
-                _send_text_message(bot, chatId, messageContent.text)
-            elif messageContent.photo:
-             bot.send_photo(chatId, messageContent.photo[-1].file_id)
-            elif messageContent.video:
-                bot.send_video(chatId, messageContent.video.file_id)
+            if message_content.text:
+                _send_text_message(bot, chatId, message_content.text)
+            elif message_content.photo:
+             bot.send_photo(chatId, message_content.photo[-1].file_id)
+            elif message_content.video:
+                bot.send_video(chatId, message_content.video.file_id)
          
 def _send_text_message(bot, chat_id, text):
     bot.send_message(chat_id, text)
